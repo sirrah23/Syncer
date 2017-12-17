@@ -61,6 +61,18 @@ func isUnique(list []string) bool{
     return true
 }
 
+func isOverlap(list1, list2 []string) bool {
+    //TODO: Could be made faster with a map
+    for _, val1 := range list1{
+        for _, val2 := range list2{
+            if val1 == val2{
+                return true
+            }
+        }
+    }
+    return false
+}
+
 //Run the rsync command for a given source and destination directory
 func rsyncCmd(src, dest string, wg *sync.WaitGroup){
     if src[len(src)-1] != '/'{
@@ -90,7 +102,6 @@ func rsyncs(srcdests []SrcDest){
 
 //Coordinates the syncing between source and destination directories
 func syncer(filesList string) error{
-    //TODO: Check for overlap between source & dest files
     pairs, srcs, dests, err := srcDestRead(filesList)
     if err != nil {
         return err
@@ -102,7 +113,10 @@ func syncer(filesList string) error{
         return errors.New("One or more files listed in input file do not exists")
     }
     if !isUnique(dests){
-        return errors.New("Source or destination directory has been duplicated")
+        return errors.New("Destination directory has been duplicated")
+    }
+    if isOverlap(srcs, dests){
+        return errors.New("Source and destination directory list has overlap")
     }
     rsyncs(pairs)
     return nil

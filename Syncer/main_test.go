@@ -70,7 +70,29 @@ func TestUniqueInputFileError(t *testing.T){
     if err == nil {
         t.Error("Expected an error")
     }
-    if err.Error() != "Source or destination directory has been duplicated"{
+    if err.Error() != "Destination directory has been duplicated"{
         t.Error("Expected uniqueness error")
+    }
+}
+
+func TestOverlapTrue(t *testing.T){
+    if !isOverlap([]string{"item1", "item2", "item3"}, []string{"item4", "item3"}){
+        t.Error("Expected overlap")
+    }
+}
+
+func TestOverlapFalse(t *testing.T){
+    if isOverlap([]string{"item1", "item2", "item3"}, []string{"item4", "item5", "item6"}){
+        t.Error("Expected no overlap")
+    }
+}
+
+func TestOverlapInputFileError(t *testing.T){
+    err := syncer("./TestFiles/testoverlap.csv")
+    if err == nil {
+        t.Error("Expected an error")
+    }
+    if err.Error() != "Source and destination directory list has overlap"{
+        t.Error("Expected overlap error")
     }
 }
