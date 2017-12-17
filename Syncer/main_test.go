@@ -2,7 +2,6 @@ package main
 
 import "testing"
 
-
 func TestPairSplitNone(t *testing.T){
     sd, s, d, _ := srcDestRead("./TestFiles/test.csv")
     if len(sd) != 0{
@@ -63,5 +62,15 @@ func TestUniqueFalse(t *testing.T){
 func TestUniqueTrue(t *testing.T){
     if !isUnique([]string{"item1", "item2", "item3", "item4"}){
         t.Error("Expected unique")
+    }
+}
+
+func TestUniqueInputFileError(t *testing.T){
+    err := syncer("./TestFiles/testdup.csv")
+    if err == nil {
+        t.Error("Expected an error")
+    }
+    if err.Error() != "Source or destination directory has been duplicated"{
+        t.Error("Expected uniqueness error")
     }
 }

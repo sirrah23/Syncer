@@ -61,7 +61,7 @@ func isUnique(list []string) bool{
     return true
 }
 
-//Run the rsync command for a source and destination directory
+//Run the rsync command for a given source and destination directory
 func rsyncCmd(src, dest string, wg *sync.WaitGroup){
     if src[len(src)-1] != '/'{
         src = src + string('/')
@@ -79,7 +79,7 @@ func rsyncCmd(src, dest string, wg *sync.WaitGroup){
 }
 
 //Run a set of rsync commands in parallel and wait for them all to finish
-func rsync(srcdests []SrcDest){
+func rsyncs(srcdests []SrcDest){
     var wg sync.WaitGroup
     wg.Add(len(srcdests))
     for _, srcdest := range srcdests{
@@ -88,21 +88,34 @@ func rsync(srcdests []SrcDest){
     wg.Wait()
 }
 
+//Coordinates the syncing between source and destination directories
+func syncer(filesList string) error{
+    //TODO: Check for overlap between source & dest files
+    pairs, srcs, dests, err := srcDestRead(filesList)
+    if err != nil {
+        return err
+    }
+    if len(pairs) == 0{
+        return errors.New("Input file is empty")
+    }
+    if !filesExist(append(srcs, dests...)){
+        return errors.New("One or more files listed in input file do not exists")
+    }
+    if !isUnique(dests){
+        return errors.New("Source or destination directory has been duplicated")
+    }
+    rsyncs(pairs)
+    return nil
+}
+
 func main(){
     filesListPtr := flag.String("files", "", "List of file pairs to rsync")
     flag.Parse()
     if len(*filesListPtr) == 0{
         log.Fatal("No input file provided")
     }
-    pairs, srcs, dests, err := srcDestRead(*filesListPtr)
+    err := syncer(*filesListPtr)
     if err != nil {
-        log.Fatalf("error: %s", err)
+        log.Fatalf("Error: %s", err)
     }
-    if len(pairs) == 0{
-        log.Fatal("Input file is empty")
-    }
-    if ! filesExist(append(srcs, dests...)){
-        log.Fatal("One or more files listed in input file do not exists")
-    }
-    rsync(pairs)
 }
