@@ -5,12 +5,18 @@ import (
     "bufio"
     "strings"
     "errors"
+    "flag"
+    "fmt"
+    "os/exec"
+    "log"
+    "sync"
 )
 
 type SrcDest struct{
     src, dest string
 }
 
+//Read a csv file with source-destination file pairs
 func srcDestRead(fname string) ([]SrcDest, []string, []string, error){
     var pairs []SrcDest
     var srcs, dests []string
@@ -32,6 +38,7 @@ func srcDestRead(fname string) ([]SrcDest, []string, []string, error){
     return pairs, srcs, dests,  nil
 }
 
+//Given a list of files, check to see that they all exist
 func filesExist(files []string)(bool){
     for _, file := range files{
         if _, err := os.Stat(file); os.IsNotExist(err){
@@ -41,6 +48,7 @@ func filesExist(files []string)(bool){
     return true
 }
 
+//Given a list of strings, make sure there are no duplicates in the list
 func isUnique(list []string) bool{
     m := make(map[string]bool)
     for _, item := range list{
@@ -53,12 +61,48 @@ func isUnique(list []string) bool{
     return true
 }
 
+//Run the rsync command for a source and destination directory
+func rsyncCmd(src, dest string, wg *sync.WaitGroup){
+    if src[len(src)-1] != '/'{
+        src = src + string('/')
+    }
+    if src[len(dest)-1] != '/'{
+        dest = dest + string('/')
+    }
+    cmd := exec.Command("rsync", "-av", src, dest)
+    _, err := cmd.CombinedOutput()
+    if err != nil {
+        log.Fatalf("Could not rsync %s and %s", src, dest)
+    }
+    log.Println(fmt.Sprintf("%s and %s have been synced", src, dest))
+    wg.Done()
+}
+
+//Run a set of rsync commands in parallel and wait for them all to finish
+func rsync(srcdests []SrcDest){
+    var wg sync.WaitGroup
+    wg.Add(len(srcdests))
+    for _, srcdest := range srcdests{
+        rsyncCmd(srcdest.src, srcdest.dest, &wg)
+    }
+    wg.Wait()
+}
+
 func main(){
-    _, srcs, dests, err := srcDestRead("./test.csv")
+    filesListPtr := flag.String("files", "", "List of file pairs to rsync")
+    flag.Parse()
+    if len(*filesListPtr) == 0{
+        panic("No input file provided")
+    }
+    pairs, srcs, dests, err := srcDestRead(*filesListPtr)
     if err != nil {
         panic(err)
+    }
+    if len(pairs) == 0{
+        panic("Input file is empty")
     }
     if ! filesExist(append(srcs, dests...)){
         panic("One or more files listed in input file do not exists")
     }
+    rsync(pairs)
 }
