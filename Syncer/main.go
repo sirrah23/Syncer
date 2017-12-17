@@ -23,7 +23,7 @@ func srcDestRead(fname string) ([]SrcDest, []string, []string, error){
     file, err := os.Open(fname)
     defer file.Close()
     if err != nil{
-        panic(err)
+        log.Fatalf("Error: %s", err)
     }
     scanner := bufio.NewScanner(file)
     for scanner.Scan(){
@@ -92,17 +92,17 @@ func main(){
     filesListPtr := flag.String("files", "", "List of file pairs to rsync")
     flag.Parse()
     if len(*filesListPtr) == 0{
-        panic("No input file provided")
+        log.Fatal("No input file provided")
     }
     pairs, srcs, dests, err := srcDestRead(*filesListPtr)
     if err != nil {
-        panic(err)
+        log.Fatalf("error: %s", err)
     }
     if len(pairs) == 0{
-        panic("Input file is empty")
+        log.Fatal("Input file is empty")
     }
     if ! filesExist(append(srcs, dests...)){
-        panic("One or more files listed in input file do not exists")
+        log.Fatal("One or more files listed in input file do not exists")
     }
     rsync(pairs)
 }
