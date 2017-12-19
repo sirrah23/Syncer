@@ -95,7 +95,7 @@ func rsyncs(srcdests []SrcDest){
     var wg sync.WaitGroup
     wg.Add(len(srcdests))
     for _, srcdest := range srcdests{
-        rsyncCmd(srcdest.src, srcdest.dest, &wg)
+        go rsyncCmd(srcdest.src, srcdest.dest, &wg)
     }
     wg.Wait()
 }
